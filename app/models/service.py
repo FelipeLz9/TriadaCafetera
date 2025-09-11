@@ -5,11 +5,11 @@ from app.database import Base
 class Service(Base):
     __tablename__ = 'services'
 
-    id = Column(Integer, primary_key=True, index=True)
+    id_service = Column(Integer, primary_key=True)
     name = Column(String, unique=True, index=True, nullable=False)
     description = Column(String, nullable=True)
     category = Column(String, nullable=False)
     price = Column(Integer, nullable=False)
-    estate_id = Column(Integer, ForeignKey('estate.id'))
+    estate_id = Column(Integer, ForeignKey('estate.id_estate'))
 
-    providers = relationship("Provider", secondary="service_providers", back_populates="services")
+    

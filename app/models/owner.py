@@ -5,7 +5,7 @@ from app.models.user import User
 
 class Owner(User):
     __tablename__ = 'owners'
-    id = Column(Integer, ForeignKey('users.id'), primary_key=True)
+    id_owner = Column(Integer, ForeignKey('users.id_users'), primary_key=True)
 
     __mapper_args__ = {
         'polymorphic_identity': 'owner',
