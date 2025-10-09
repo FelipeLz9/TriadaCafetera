@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from database import Base
+from app.database import Base
 
 class Estate(Base):
     __tablename__ = 'estates'
@@ -14,4 +14,4 @@ class Estate(Base):
     bookings = relationship("Booking", back_populates="finca")
     
     owner = relationship("User", back_populates="estates")
-    properties = relationship("Property", back_populates="estate")
+    services = relationship("Service", back_populates="estate")
