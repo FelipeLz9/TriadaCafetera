@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import user, experience
+from app.routes import user, experience, auth
 from app.database import create_tables
 
 app = FastAPI(
@@ -11,6 +11,7 @@ app = FastAPI(
 # Incluir las rutas
 app.include_router(user.router)
 app.include_router(experience.router)
+app.include_router(auth.router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -25,7 +26,8 @@ def read_root():
         "docs": "/docs",
         "endpoints": {
             "users": "/users",
-            "experiences": "/experiences"
+            "experiences": "/experiences",
+            "auth": "/auth"
         }
     }
 
