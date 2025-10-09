@@ -1,18 +1,14 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from app.database import Base
 
 class User(Base):
-    __tablename__ = 'users'
-    
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    full_name = Column(String, index=True)
-    hashed_password = Column(String)
-    phone = Column(String, unique=True, index=True)
-    is_active = Column(Integer, default=1)
-    
-    estates = relationship("Estate", back_populates="owner")
-    experiences = relationship("Experiences", back_populates="user")
-    chatbots = relationship("Chatbot", back_populates="user")
+    __tablename__ = "users"
+
+    id_users = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(100), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+
+    # Relación 1:1 con Profile
+    profile = relationship("Profile", back_populates="user", uselist=False)
