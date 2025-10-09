@@ -13,3 +13,19 @@ app.include_router(profileController.router)
 @app.get("/")
 def root():
     return {"message": "API de perfiles funcionando correctamente 🚀"}
+
+from fastapi import FastAPI
+from controllers import profileController, reviewController
+from database import Base, engine
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="API de Perfiles y Reseñas")
+
+app.include_router(profileController.router)
+app.include_router(reviewController.router)
+
+@app.get("/")
+def root():
+    return {"message": "API funcionando correctamente 🚀"}
+

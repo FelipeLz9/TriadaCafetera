@@ -10,7 +10,7 @@ router = APIRouter(
     tags=["Profiles"]
 )
 
-# 🟢 Crear un perfil
+#  Crear un perfil
 @router.post("/", response_model=ProfileResponse)
 def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id_users == profile.user_id).first()
@@ -28,7 +28,7 @@ def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
     return new_profile
 
 
-# 🔵 Obtener un perfil por ID
+#  Obtener un perfil por ID
 @router.get("/{profile_id}", response_model=ProfileResponse)
 def get_profile(profile_id: int, db: Session = Depends(get_db)):
     profile = db.query(Profile).filter(Profile.id_profile == profile_id).first()
@@ -37,7 +37,7 @@ def get_profile(profile_id: int, db: Session = Depends(get_db)):
     return profile
 
 
-# 🔵 Obtener un perfil por ID de usuario
+#  Obtener un perfil por ID de usuario
 @router.get("/user/{user_id}", response_model=ProfileResponse)
 def get_profile_by_user(user_id: int, db: Session = Depends(get_db)):
     profile = db.query(Profile).filter(Profile.user_id == user_id).first()
@@ -46,7 +46,7 @@ def get_profile_by_user(user_id: int, db: Session = Depends(get_db)):
     return profile
 
 
-# 🟠 Actualizar un perfil
+#  Actualizar un perfil
 @router.put("/{profile_id}", response_model=ProfileResponse)
 def update_profile(profile_id: int, updated_data: ProfileUpdate, db: Session = Depends(get_db)):
     profile = db.query(Profile).filter(Profile.id_profile == profile_id).first()
@@ -61,7 +61,7 @@ def update_profile(profile_id: int, updated_data: ProfileUpdate, db: Session = D
     return profile
 
 
-# 🔴 Eliminar un perfil
+#  Eliminar un perfil
 @router.delete("/{profile_id}")
 def delete_profile(profile_id: int, db: Session = Depends(get_db)):
     profile = db.query(Profile).filter(Profile.id_profile == profile_id).first()
