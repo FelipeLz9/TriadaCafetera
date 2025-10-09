@@ -66,9 +66,16 @@ class UserController:
         return UserResponse.from_orm(user)
 
     async def get_user_by_username(self, username: str) -> Optional[User]:
-        """Obtener usuario por nombre de usuario"""
+        """Obtener usuario por nombre de usuario (modelo de BD)"""
         result = await self.db.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()
+    
+    async def get_user_by_username_response(self, username: str) -> Optional[UserResponse]:
+        """Obtener usuario por nombre de usuario (schema de respuesta)"""
+        user = await self.get_user_by_username(username)
+        if not user:
+            return None
+        return UserResponse.from_orm(user)
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """Obtener usuario por email"""
