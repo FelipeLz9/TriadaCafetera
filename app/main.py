@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.database import Base, engine
-from app.controllers import clientController
+from app.routes import client
 
 app = FastAPI(title="Triada Cafetera API")
 
@@ -11,5 +11,5 @@ def read_root():
 # Crear las tablas
 Base.metadata.create_all(bind=engine)
 
-# Registrar el router del endpoint
-app.include_router(clientController.router)
+# Registrar los routers
+app.include_router(client.router)
