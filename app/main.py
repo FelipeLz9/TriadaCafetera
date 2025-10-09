@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import user
+from app.routes import user, experience
 from app.database import create_tables
 
 app = FastAPI(
@@ -10,6 +10,7 @@ app = FastAPI(
 
 # Incluir las rutas
 app.include_router(user.router)
+app.include_router(experience.router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -21,7 +22,11 @@ def read_root():
     return {
         "message": "Bienvenido a Triada Cafetera API",
         "version": "1.0.0",
-        "docs": "/docs"
+        "docs": "/docs",
+        "endpoints": {
+            "users": "/users",
+            "experiences": "/experiences"
+        }
     }
 
 @app.get("/health")
