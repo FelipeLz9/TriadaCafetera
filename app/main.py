@@ -1,15 +1,19 @@
 from fastapi import FastAPI
 from app.routes import user
+from app.routes.booking import router as booking_router
+from app.controllers import clientController
 from app.database import create_tables
 
 app = FastAPI(
     title="Triada Cafetera API",
-    description="API para la gestión de usuarios, fincas cafeteras y experiencias",
+    description="API para la gestión de usuarios, fincas cafeteras, experiencias y reservas",
     version="1.0.0"
 )
 
-# Incluir las rutas
+# Incluir todas las rutas
 app.include_router(user.router)
+app.include_router(clientController.router)
+app.include_router(booking_router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -19,18 +23,11 @@ async def startup_event():
 @app.get("/")
 def read_root():
     return {
-        "message": "API del Sistema de Reservas",
+        "message": "Bienvenido a Triada Cafetera API",
         "version": "1.0.0",
         "docs": "/docs",
         "redoc": "/redoc"
     }
-
-# Crear las tablas
-Base.metadata.create_all(bind=engine)
-
-# Registrar el router del endpoint
-app.include_router(clientController.router)
-app.include_router(booking_router)
 
 @app.get("/health")
 def health_check():
