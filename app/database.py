@@ -13,18 +13,14 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-async def get_db():
-    async with SessionLocal() as session:
-        yield session
-        
-async def create_tables():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-# Dependencia de sesión para FastAPI
 def get_db():
+    """Dependencia de sesión para FastAPI"""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+def create_tables():
+    """Crear todas las tablas en la base de datos"""
+    Base.metadata.create_all(bind=engine)

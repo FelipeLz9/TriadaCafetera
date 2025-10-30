@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from database import get_db
-from models.profile import Profile
-from models.user import User
-from schemas.profile_schema import ProfileCreate, ProfileUpdate, ProfileResponse
+from app.database import get_db
+from app.models.profile import Profile
+from app.models.user import User
+from app.schemas.profile_schema import ProfileCreate, ProfileUpdate, ProfileResponse
 
 router = APIRouter(
     prefix="/profiles",
@@ -13,7 +13,7 @@ router = APIRouter(
 # 🟢 Crear un perfil
 @router.post("/", response_model=ProfileResponse)
 def create_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id_users == profile.user_id).first()
+    user = db.query(User).filter(User.id == profile.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 

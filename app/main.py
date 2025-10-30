@@ -17,9 +17,9 @@ app.include_router(booking_router)
 app.include_router(profileController.router)
 
 @app.on_event("startup")
-async def startup_event():
+def startup_event():
     """Evento que se ejecuta al iniciar la aplicación"""
-    await create_tables()
+    create_tables()
 
 @app.get("/")
 def read_root():

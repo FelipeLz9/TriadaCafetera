@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.database import get_db
 from app.models.client import Client
@@ -21,9 +21,9 @@ def get_password_hash(password: str) -> str:
 
 # Endpoint: crear un nuevo cliente
 @router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
-async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)):
+def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     # Verificar si el usuario ya existe
-    result = await db.execute(select(User).where(User.username == client.username))
+    result = db.execute(select(User).where(User.username == client.username))
     existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(
@@ -31,7 +31,7 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
             detail="Username already registered"
         )
     
-    result = await db.execute(select(User).where(User.email == client.email))
+    result = db.execute(select(User).where(User.email == client.email))
     existing_email = result.scalar_one_or_none()
     if existing_email:
         raise HTTPException(
@@ -47,18 +47,18 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
         full_name=client.full_name,
         phone=client.phone,
         hashed_password=hashed_password,
-        is_active=1
+        is_active=True
     )
     
     db.add(db_user)
-    await db.commit()
-    await db.refresh(db_user)
+    db.commit()
+    db.refresh(db_user)
     
     # Crear el cliente
     db_client = Client(id_client=db_user.id)
     db.add(db_client)
-    await db.commit()
-    await db.refresh(db_client)
+    db.commit()
+    db.refresh(db_client)
     
     return ClientResponse(
         id_client=db_client.id_client,
@@ -71,8 +71,8 @@ async def create_client(client: ClientCreate, db: AsyncSession = Depends(get_db)
 
 # Endpoint: obtener todos los clientes
 @router.get("/", response_model=List[ClientResponse])
-async def get_clients(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
+def get_clients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    result = db.execute(
         select(Client, User).join(User, Client.id_client == User.id).offset(skip).limit(limit)
     )
     clients_data = result.all()
@@ -91,8 +91,8 @@ async def get_clients(skip: int = 0, limit: int = 100, db: AsyncSession = Depend
 
 # Endpoint: obtener un cliente por ID
 @router.get("/{client_id}", response_model=ClientResponse)
-async def get_client(client_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
+def get_client(client_id: int, db: Session = Depends(get_db)):
+    result = db.execute(
         select(Client, User).join(User, Client.id_client == User.id).where(Client.id_client == client_id)
     )
     client_data = result.first()
@@ -115,8 +115,8 @@ async def get_client(client_id: int, db: AsyncSession = Depends(get_db)):
 
 # Endpoint: actualizar un cliente
 @router.put("/{client_id}", response_model=ClientResponse)
-async def update_client(client_id: int, client_update: ClientUpdate, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
+def update_client(client_id: int, client_update: ClientUpdate, db: Session = Depends(get_db)):
+    result = db.execute(
         select(Client, User).join(User, Client.id_client == User.id).where(Client.id_client == client_id)
     )
     client_data = result.first()
@@ -138,8 +138,8 @@ async def update_client(client_id: int, client_update: ClientUpdate, db: AsyncSe
     for field, value in update_data.items():
         setattr(user, field, value)
     
-    await db.commit()
-    await db.refresh(user)
+    db.commit()
+    db.refresh(user)
     
     return ClientResponse(
         id_client=client.id_client,
@@ -152,8 +152,8 @@ async def update_client(client_id: int, client_update: ClientUpdate, db: AsyncSe
 
 # Endpoint: eliminar un cliente (soft delete)
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_client(client_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
+def delete_client(client_id: int, db: Session = Depends(get_db)):
+    result = db.execute(
         select(Client, User).join(User, Client.id_client == User.id).where(Client.id_client == client_id)
     )
     client_data = result.first()
@@ -165,5 +165,5 @@ async def delete_client(client_id: int, db: AsyncSession = Depends(get_db)):
         )
     
     client, user = client_data
-    user.is_active = 0  # Soft delete
-    await db.commit()
+    user.is_active = False  # Soft delete
+    db.commit()
