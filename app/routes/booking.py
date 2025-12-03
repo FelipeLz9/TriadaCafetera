@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.database import get_db
@@ -17,10 +17,10 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=BookingResponse, status_code=201)
-async def create_booking(
+@router.post("/", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
+def create_booking(
     booking_data: BookingCreate,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Crear una nueva reserva
@@ -32,17 +32,18 @@ async def create_booking(
     - **user_id**: ID del usuario
     - **estate_id**: ID de la finca
     """
-    return await BookingController.create_booking(db, booking_data)
+    controller = BookingController(db)
+    return controller.create_booking(booking_data)
 
 
 @router.get("/", response_model=List[BookingResponse])
-async def get_all_bookings(
+def get_all_bookings(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Límite de registros"),
     user_id: Optional[int] = Query(None, description="Filtrar por ID de usuario"),
     estate_id: Optional[int] = Query(None, description="Filtrar por ID de finca"),
-    status: Optional[str] = Query(None, description="Filtrar por estado"),
-    db: AsyncSession = Depends(get_db)
+    status_filter: Optional[str] = Query(None, description="Filtrar por estado", alias="status"),
+    db: Session = Depends(get_db)
 ):
     """
     Obtener todas las reservas con filtros opcionales
@@ -52,32 +53,39 @@ async def get_all_bookings(
     - **estate_id**: Mostrar solo reservas de una finca específica
     - **status**: Filtrar por estado (pending, confirmed, cancelled)
     """
-    return await BookingController.get_all_bookings(
-        db=db,
+    controller = BookingController(db)
+    return controller.get_all_bookings(
         skip=skip,
         limit=limit,
         user_id=user_id,
         estate_id=estate_id,
-        status=status
+        status_filter=status_filter
     )
 
 
 @router.get("/{booking_id}", response_model=BookingDetail)
-async def get_booking_by_id(
+def get_booking_by_id(
     booking_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Obtener una reserva específica por su ID
     """
-    return await BookingController.get_booking_by_id(db, booking_id)
+    controller = BookingController(db)
+    booking = controller.get_booking_by_id(booking_id)
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reserva no encontrada"
+        )
+    return booking
 
 
 @router.put("/{booking_id}", response_model=BookingResponse)
-async def update_booking(
+def update_booking(
     booking_id: int,
     booking_update: BookingUpdate,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Actualizar una reserva existente
@@ -89,39 +97,43 @@ async def update_booking(
     - **status**: Nuevo estado
     - **num_persons**: Nuevo número de personas
     """
-    return await BookingController.update_booking(db, booking_id, booking_update)
+    controller = BookingController(db)
+    return controller.update_booking(booking_id, booking_update)
 
 
-@router.delete("/{booking_id}", status_code=204)
-async def delete_booking(
+@router.delete("/{booking_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_booking(
     booking_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Eliminar una reserva
     """
-    await BookingController.delete_booking(db, booking_id)
-    return {"message": "Reserva eliminada exitosamente"}
+    controller = BookingController(db)
+    controller.delete_booking(booking_id)
+    return None
 
 
 # Endpoints adicionales para casos específicos
 @router.get("/user/{user_id}", response_model=List[BookingResponse])
-async def get_user_bookings(
+def get_user_bookings(
     user_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Obtener todas las reservas de un usuario específico
     """
-    return await BookingController.get_bookings_by_user(db, user_id)
+    controller = BookingController(db)
+    return controller.get_bookings_by_user(user_id)
 
 
 @router.get("/estate/{estate_id}", response_model=List[BookingResponse])
-async def get_estate_bookings(
+def get_estate_bookings(
     estate_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Obtener todas las reservas de una finca específica
     """
-    return await BookingController.get_bookings_by_estate(db, estate_id)
+    controller = BookingController(db)
+    return controller.get_bookings_by_estate(estate_id)
