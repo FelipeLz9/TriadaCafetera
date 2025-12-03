@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from database import Base
+from app.database import Base
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -17,5 +17,5 @@ class Profile(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user_id = Column(Integer, ForeignKey("users.id_users"), unique=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     user = relationship("User", back_populates="profile")

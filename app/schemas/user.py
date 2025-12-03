@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 from pydantic import BaseModel, EmailStr
+=======
+from pydantic import BaseModel, EmailStr, Field
+>>>>>>> ac92324246a3a9f215ff2e9db0c8aea54c542b40
 from typing import Optional
 from datetime import datetime
 
@@ -9,7 +13,11 @@ class UserBase(BaseModel):
     phone: str
 
 class UserCreate(UserBase):
+<<<<<<< HEAD
     password: str
+=======
+    password: str = Field(..., min_length=1, max_length=72, description="Contraseña (máximo 72 bytes para bcrypt)")
+>>>>>>> ac92324246a3a9f215ff2e9db0c8aea54c542b40
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
