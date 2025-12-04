@@ -13,6 +13,9 @@ class User(Base):
     phone = Column(String, unique=True, index=True)
     is_active = Column(Integer, default=1)
     
-    estates = relationship("Estate", back_populates="owner")
-    experiences = relationship("Experiences", back_populates="user")
-    chatbots = relationship("Chatbot", back_populates="user")
+    # Relaciones - usar lazy="select" para evitar problemas de importación circular
+    estates = relationship("Estate", back_populates="owner", lazy="select", cascade="all, delete-orphan")
+    experiences = relationship("Experiences", back_populates="user", lazy="select", cascade="all, delete-orphan")
+    profile = relationship("Profile", back_populates="user", lazy="select", uselist=False, cascade="all, delete-orphan")
+    bookings = relationship("Booking", back_populates="user", lazy="select", cascade="all, delete-orphan")
+    reviews = relationship("Review", back_populates="user", lazy="select", cascade="all, delete-orphan")

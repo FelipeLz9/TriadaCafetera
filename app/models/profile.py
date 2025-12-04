@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from database import Base
+from app.database import Base
 
 class Profile(Base):
     __tablename__ = 'profiles'
@@ -8,6 +8,6 @@ class Profile(Base):
     id_profile = Column(Integer, primary_key=True)
     bio = Column(String)
     avatar_url = Column(String)
-    user_id = Column(Integer, ForeignKey('users.id_users'))
+    user_id = Column(Integer, ForeignKey('users.id'))
     
     user = relationship("User", back_populates="profile")

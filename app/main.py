@@ -1,6 +1,8 @@
 from fastapi import FastAPI
-from app.database import Base, engine
+from app.database import create_tables
 from app.routes import client
+# Importar modelos para que se registren con Base
+from app.models import *
 
 app = FastAPI(title="Triada Cafetera API")
 
@@ -8,8 +10,10 @@ app = FastAPI(title="Triada Cafetera API")
 def read_root():
     return {"Hello": "World"}
 
-# Crear las tablas
-Base.metadata.create_all(bind=engine)
-
 # Registrar los routers
 app.include_router(client.router)
+
+@app.on_event("startup")
+async def startup_event():
+    """Crear las tablas al iniciar la aplicación"""
+    await create_tables()

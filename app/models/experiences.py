@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from database import Base
+from app.database import Base
 
 class Experiences(Base):
     __tablename__ = 'experiences'
@@ -12,7 +12,7 @@ class Experiences(Base):
     duration = Column(Integer)
     price = Column(Integer, index=True)
     location = Column(String, index=True)
-    user_id = Column(Integer, ForeignKey('users.id_users'))
+    user_id = Column(Integer, ForeignKey('users.id'))
     
     user = relationship("User", back_populates="experiences")
     bookings = relationship("Booking", back_populates="experience")
