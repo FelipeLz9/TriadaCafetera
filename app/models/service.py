@@ -10,6 +10,6 @@ class Service(Base):
     description = Column(String, nullable=True)
     category = Column(String, nullable=False)
     price = Column(Integer, nullable=False)
-    estate_id = Column(Integer, ForeignKey('estate.id_estate'))
+    estate_id = Column(Integer, ForeignKey('estates.id'))
 
     
