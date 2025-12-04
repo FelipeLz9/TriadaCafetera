@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from app.routes import user
 from app.routes.booking import router as booking_router
 from app.routes.estate import router as estate_router
-from app.controllers import clientController, profileController
+from app.routes.profile import router as profile_router
+from app.controllers import clientController
 from app.database import create_tables
 
 app = FastAPI(
@@ -16,7 +17,7 @@ app.include_router(user.router)
 app.include_router(clientController.router)
 app.include_router(booking_router)
 app.include_router(estate_router)
-app.include_router(profileController.router)
+app.include_router(profile_router)
 
 @app.on_event("startup")
 def startup_event():

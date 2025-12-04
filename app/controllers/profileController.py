@@ -5,7 +5,7 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 
 from app.models.profile import Profile
-from app.schemas.profile import ProfileCreate, ProfileUpdate, ProfileResponse
+from app.schemas.profile_schema import ProfileCreate, ProfileUpdate, ProfileResponse
 from app.models.user import User
 
 class ProfileController:
@@ -43,10 +43,13 @@ class ProfileController:
             # Crear perfil
             db_profile = Profile(
                 user_id=profile_data.user_id,
-                address=profile_data.address,
                 bio=profile_data.bio,
-                birthdate=profile_data.birthdate,
-                is_active=True
+                avatar_url=str(profile_data.avatar_url) if profile_data.avatar_url else None,
+                location=profile_data.location,
+                website=str(profile_data.website) if profile_data.website else None,
+                theme=profile_data.theme,
+                language=profile_data.language,
+                show_email=profile_data.show_email
             )
 
             self.db.add(db_profile)
@@ -68,7 +71,7 @@ class ProfileController:
     def get_profile_by_id(self, profile_id: int) -> Optional[ProfileResponse]:
         """Obtener perfil por ID"""
         result = self.db.execute(
-            select(Profile).where(Profile.id == profile_id)
+            select(Profile).where(Profile.id_profile == profile_id)
         )
         profile = result.scalar_one_or_none()
 
@@ -118,11 +121,17 @@ class ProfileController:
                 detail="Perfil no encontrado"
             )
 
-        update_data = profile_data.dict(exclude_unset=True)
+        update_data = profile_data.model_dump(exclude_unset=True)
+        
+        # Convertir HttpUrl a string si existen
+        if "avatar_url" in update_data and update_data["avatar_url"]:
+            update_data["avatar_url"] = str(update_data["avatar_url"])
+        if "website" in update_data and update_data["website"]:
+            update_data["website"] = str(update_data["website"])
 
         # Actualizar
         self.db.execute(
-            update(Profile).where(Profile.id == profile_id).values(**update_data)
+            update(Profile).where(Profile.id_profile == profile_id).values(**update_data)
         )
         self.db.commit()
 
@@ -141,10 +150,13 @@ class ProfileController:
                 detail="Perfil no encontrado"
             )
 
-        # Soft delete
-        self.db.execute(
-            update(Profile).where(Profile.id == profile_id).values(is_active=False)
-        )
+        # Eliminar perfil (hard delete ya que no hay campo is_active)
+        profile_to_delete = self.db.execute(
+            select(Profile).where(Profile.id_profile == profile_id)
+        ).scalar_one_or_none()
+        
+        if profile_to_delete:
+            self.db.delete(profile_to_delete)
         self.db.commit()
 
         return True

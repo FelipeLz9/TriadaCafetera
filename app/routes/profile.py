@@ -4,7 +4,7 @@ from typing import List
 
 from app.database import get_db
 from app.controllers.profileController import ProfileController
-from app.schemas.profile import ProfileCreate, ProfileUpdate, ProfileResponse
+from app.schemas.profile_schema import ProfileCreate, ProfileUpdate, ProfileResponse
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
