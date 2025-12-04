@@ -1,169 +1,167 @@
-from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.database import get_db
+from sqlalchemy.exc import IntegrityError
+from typing import List, Optional
+from fastapi import HTTPException, status
+
 from app.models.client import Client
 from app.models.user import User
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse
-from passlib.context import CryptContext
-from typing import List
+from app.utils.auth import get_password_hash
 
-router = APIRouter(prefix="/clients", tags=["Clients"])
+class ClientController:
+    def __init__(self, db: Session):
+        self.db = db
 
-# Configuración para hash de contraseñas
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    def create_client(self, client_data: ClientCreate) -> ClientResponse:
+        """Crear un nuevo cliente"""
+        try:
+            # Verificar si el usuario ya existe
+            result = self.db.execute(select(User).where(User.username == client_data.username))
+            existing_user = result.scalar_one_or_none()
+            if existing_user:
+                # Verificar si ese User es un Client
+                result_client = self.db.execute(select(Client).where(Client.id_client == existing_user.id))
+                existing_client = result_client.scalar_one_or_none()
+                if existing_client:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="El nombre de usuario ya existe como cliente"
+                    )
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="El nombre de usuario ya existe"
+                    )
+            
+            # Verificar si el email ya existe
+            result = self.db.execute(select(User).where(User.email == client_data.email))
+            existing_email = result.scalar_one_or_none()
+            if existing_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="El email ya está registrado"
+                )
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+            # Crear el cliente directamente (Client hereda de User, así que tiene todos los campos)
+            hashed_password = get_password_hash(client_data.password)
+            db_client = Client(
+                username=client_data.username,
+                email=client_data.email,
+                full_name=client_data.full_name,
+                phone=client_data.phone,
+                hashed_password=hashed_password,
+                is_active=True
+            )
+            
+            self.db.add(db_client)
+            self.db.commit()
+            self.db.refresh(db_client)
+            
+            return ClientResponse(
+                id_client=db_client.id_client,
+                username=db_client.username,
+                email=db_client.email,
+                full_name=db_client.full_name,
+                phone=db_client.phone,
+                is_active=db_client.is_active
+            )
+            
+        except IntegrityError as e:
+            self.db.rollback()
+            error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error de integridad en la base de datos: {error_msg}"
+            )
 
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
-# Endpoint: crear un nuevo cliente
-@router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
-def create_client(client: ClientCreate, db: Session = Depends(get_db)):
-    # Verificar si el usuario ya existe
-    result = db.execute(select(User).where(User.username == client.username))
-    existing_user = result.scalar_one_or_none()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
+    def get_client_by_id(self, client_id: int) -> Optional[ClientResponse]:
+        """Obtener cliente por ID"""
+        result = self.db.execute(
+            select(Client).where(Client.id_client == client_id)
         )
-    
-    result = db.execute(select(User).where(User.email == client.email))
-    existing_email = result.scalar_one_or_none()
-    if existing_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Crear el usuario base
-    hashed_password = get_password_hash(client.password)
-    db_user = User(
-        username=client.username,
-        email=client.email,
-        full_name=client.full_name,
-        phone=client.phone,
-        hashed_password=hashed_password,
-        is_active=True
-    )
-    
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    
-    # Crear el cliente
-    db_client = Client(id_client=db_user.id)
-    db.add(db_client)
-    db.commit()
-    db.refresh(db_client)
-    
-    return ClientResponse(
-        id_client=db_client.id_client,
-        username=db_user.username,
-        email=db_user.email,
-        full_name=db_user.full_name,
-        phone=db_user.phone,
-        is_active=db_user.is_active
-    )
-
-# Endpoint: obtener todos los clientes
-@router.get("/", response_model=List[ClientResponse])
-def get_clients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    result = db.execute(
-        select(Client, User).join(User, Client.id_client == User.id).offset(skip).limit(limit)
-    )
-    clients_data = result.all()
-    
-    return [
-        ClientResponse(
+        client = result.scalar_one_or_none()
+        
+        if not client:
+            return None
+        
+        return ClientResponse(
             id_client=client.id_client,
-            username=user.username,
-            email=user.email,
-            full_name=user.full_name,
-            phone=user.phone,
-            is_active=user.is_active
+            username=client.username,
+            email=client.email,
+            full_name=client.full_name,
+            phone=client.phone,
+            is_active=client.is_active
         )
-        for client, user in clients_data
-    ]
 
-# Endpoint: obtener un cliente por ID
-@router.get("/{client_id}", response_model=ClientResponse)
-def get_client(client_id: int, db: Session = Depends(get_db)):
-    result = db.execute(
-        select(Client, User).join(User, Client.id_client == User.id).where(Client.id_client == client_id)
-    )
-    client_data = result.first()
-    
-    if not client_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client not found"
+    def get_all_clients(self, skip: int = 0, limit: int = 100) -> List[ClientResponse]:
+        """Obtener todos los clientes con paginación"""
+        result = self.db.execute(
+            select(Client).offset(skip).limit(limit)
         )
-    
-    client, user = client_data
-    return ClientResponse(
-        id_client=client.id_client,
-        username=user.username,
-        email=user.email,
-        full_name=user.full_name,
-        phone=user.phone,
-        is_active=user.is_active
-    )
+        clients = result.scalars().all()
+        
+        return [
+            ClientResponse(
+                id_client=client.id_client,
+                username=client.username,
+                email=client.email,
+                full_name=client.full_name,
+                phone=client.phone,
+                is_active=client.is_active
+            )
+            for client in clients
+        ]
 
-# Endpoint: actualizar un cliente
-@router.put("/{client_id}", response_model=ClientResponse)
-def update_client(client_id: int, client_update: ClientUpdate, db: Session = Depends(get_db)):
-    result = db.execute(
-        select(Client, User).join(User, Client.id_client == User.id).where(Client.id_client == client_id)
-    )
-    client_data = result.first()
-    
-    if not client_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client not found"
+    def update_client(self, client_id: int, client_data: ClientUpdate) -> Optional[ClientResponse]:
+        """Actualizar cliente"""
+        # Verificar si el cliente existe
+        result = self.db.execute(
+            select(Client).where(Client.id_client == client_id)
         )
-    
-    client, user = client_data
-    
-    # Actualizar campos si se proporcionan
-    update_data = client_update.dict(exclude_unset=True)
-    
-    if "password" in update_data:
-        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
-    
-    for field, value in update_data.items():
-        setattr(user, field, value)
-    
-    db.commit()
-    db.refresh(user)
-    
-    return ClientResponse(
-        id_client=client.id_client,
-        username=user.username,
-        email=user.email,
-        full_name=user.full_name,
-        phone=user.phone,
-        is_active=user.is_active
-    )
+        client = result.scalar_one_or_none()
+        
+        if not client:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Cliente no encontrado"
+            )
+        
+        # Actualizar campos si se proporcionan
+        update_data = client_data.model_dump(exclude_unset=True)
+        
+        if "password" in update_data:
+            update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+        
+        for field, value in update_data.items():
+            setattr(client, field, value)
+        
+        self.db.commit()
+        self.db.refresh(client)
+        
+        return ClientResponse(
+            id_client=client.id_client,
+            username=client.username,
+            email=client.email,
+            full_name=client.full_name,
+            phone=client.phone,
+            is_active=client.is_active
+        )
 
-# Endpoint: eliminar un cliente (soft delete)
-@router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_client(client_id: int, db: Session = Depends(get_db)):
-    result = db.execute(
-        select(Client, User).join(User, Client.id_client == User.id).where(Client.id_client == client_id)
-    )
-    client_data = result.first()
-    
-    if not client_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Client not found"
+    def delete_client(self, client_id: int) -> bool:
+        """Eliminar cliente (soft delete - marcar como inactivo)"""
+        result = self.db.execute(
+            select(Client).where(Client.id_client == client_id)
         )
-    
-    client, user = client_data
-    user.is_active = False  # Soft delete
-    db.commit()
+        client = result.scalar_one_or_none()
+        
+        if not client:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Cliente no encontrado"
+            )
+        
+        # Soft delete - marcar como inactivo
+        client.is_active = False
+        self.db.commit()
+        return True

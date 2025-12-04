@@ -1,9 +1,8 @@
 from fastapi import FastAPI
-from app.routes import user
+from app.routes import user, client
 from app.routes.booking import router as booking_router
 from app.routes.estate import router as estate_router
 from app.routes.profile import router as profile_router
-from app.controllers import clientController
 from app.database import create_tables
 
 app = FastAPI(
@@ -14,7 +13,7 @@ app = FastAPI(
 
 # Incluir todas las rutas
 app.include_router(user.router)
-app.include_router(clientController.router)
+app.include_router(client.router)
 app.include_router(booking_router)
 app.include_router(estate_router)
 app.include_router(profile_router)
