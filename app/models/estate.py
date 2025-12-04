@@ -11,8 +11,6 @@ class Estate(Base):
     size = Column(Integer, index=True)
     price = Column(Integer, index=True)
     owner_id = Column(Integer, ForeignKey('users.id'))
-    bookings = relationship("Booking", back_populates="estate")
-    reviews = relationship("Review", back_populates="estate")
     
     owner = relationship("User", back_populates="estates")
-    # properties = relationship("Property", back_populates="estate")  # Comentado si no existe Property
+    bookings = relationship("Booking", back_populates="estate")

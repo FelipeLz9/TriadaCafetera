@@ -1,19 +1,39 @@
 from fastapi import FastAPI
+from app.routes import user
+from app.routes.booking import router as booking_router
+from app.routes.estate import router as estate_router
+from app.routes.profile import router as profile_router
+from app.controllers import clientController
 from app.database import create_tables
-from app.routes import client
-# Importar modelos para que se registren con Base
-from app.models import *
 
-app = FastAPI(title="Triada Cafetera API")
+app = FastAPI(
+    title="Triada Cafetera API",
+    description="API para la gestión de usuarios, fincas cafeteras, experiencias y reservas",
+    version="1.0.0"
+)
+
+# Incluir todas las rutas
+app.include_router(user.router)
+app.include_router(clientController.router)
+app.include_router(booking_router)
+app.include_router(estate_router)
+app.include_router(profile_router)
+
+@app.on_event("startup")
+def startup_event():
+    """Evento que se ejecuta al iniciar la aplicación"""
+    create_tables()
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {
+        "message": "Bienvenido a Triada Cafetera API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "redoc": "/redoc"
+    }
 
-# Registrar los routers
-app.include_router(client.router)
-
-@app.on_event("startup")
-async def startup_event():
-    """Crear las tablas al iniciar la aplicación"""
-    await create_tables()
+@app.get("/health")
+def health_check():
+    """Endpoint para verificar el estado de la API"""
+    return {"status": "healthy", "message": "API funcionando correctamente"}

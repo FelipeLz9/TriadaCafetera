@@ -6,7 +6,7 @@ class Booking(Base):
     __tablename__ = 'bookings'
     
     id = Column(Integer, primary_key=True, index=True)
-    start_date = Column(String, unique=True, index=True)
+    start_date = Column(String, index=True)
     end_date = Column(String, index=True)
     status = Column(String, index=True)
     num_persons = Column(Integer, index=True)
@@ -15,4 +15,3 @@ class Booking(Base):
     
     user = relationship("User", back_populates="bookings")
     estate = relationship("Estate", back_populates="bookings")
-    # conversations = relationship("Conversation", back_populates="bookings")  # Comentado si no existe Conversation

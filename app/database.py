@@ -1,22 +1,29 @@
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import declarative_base
-from app.config import settings
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import os
+from dotenv import load_dotenv
+from pathlib import Path
 
-DATABASE_URL = settings.DATABASE_URL
+load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
 
-engine = create_async_engine(DATABASE_URL, echo=True)
-SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
+# URL de conexión (puedes cambiar SQLite por PostgreSQL o MySQL si quieres)
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 Base = declarative_base()
 
-# Importar modelos después de definir Base para evitar importación circular
-# Los modelos se importarán cuando se necesiten
+def get_db():
+    """Dependencia de sesión para FastAPI"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-async def get_db():
-    async with SessionLocal() as session:
-        yield session
-        
-async def create_tables():
-    # Los modelos deben importarse antes de llamar a esta función
-    # Se importan en main.py para evitar importación circular
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all) 
+def create_tables():
+    """Crear todas las tablas en la base de datos"""
+    Base.metadata.create_all(bind=engine)

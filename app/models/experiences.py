@@ -15,4 +15,3 @@ class Experiences(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     
     user = relationship("User", back_populates="experiences")
-    bookings = relationship("Booking", back_populates="experience")
